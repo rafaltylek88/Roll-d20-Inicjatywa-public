@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Generator d20 — Shadowdark</title>
+<style>
+  :root {
+    --bg: #111318;
+    --panel: #1b1e24;
+    --panel2: #242830;
+    --text: #f2f2ee;
+    --muted: #aeb3bb;
+    --accent: #d7b56d;
+    --accent2: #8f9b7a;
+    --border: #454b55;
+    --danger: #b85c5c;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background:
+      radial-gradient(circle at 50% 0%, #292d35 0, var(--bg) 48%),
+      var(--bg);
+    color: var(--text);
+    font-family: Georgia, "Times New Roman", serif;
+    padding: 24px;
+  }
+  .app {
+    width: min(980px, 100%);
+    background: rgba(27,30,36,.97);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.45);
+    overflow: hidden;
+  }
+  header {
+    padding: 22px 26px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+    align-items: center;
+  }
+  h1 { margin: 0; font-size: 26px; letter-spacing: .5px; }
+  .subtitle { color: var(--muted); margin-top: 5px; font-family: Arial, sans-serif; font-size: 13px; }
+  .main {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 22px;
+    padding: 24px;
+  }
+  .card {
+    background: var(--panel2);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+  }
+  label {
+    display: block;
+    color: var(--muted);
+    font-family: Arial, sans-serif;
+    font-size: 12px;
+    margin: 0 0 7px;
+  }
+  input, textarea, select {
+    width: 100%;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: #15181d;
+    color: var(--text);
+    padding: 10px 12px;
+    font-size: 16px;
+    outline: none;
+  }
+  input:focus, textarea:focus { border-color: var(--accent); }
+  .row { display: grid; grid-template-columns: 1fr 130px; gap: 12px; margin-bottom: 14px; }
+  .result {
+    text-align: center;
+    padding: 24px 10px 18px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-top: 18px;
+    background: #171a1f;
+  }
+  .dice { font-size: 62px; line-height: 1; margin-bottom: 8px; }
+  .roll-number { font-size: 54px; font-weight: bold; color: var(--accent); }
+  .calculation {
+    margin-top: 8px;
+    font-family: Arial, sans-serif;
+    color: var(--muted);
+    font-size: 15px;
+  }
+  .total { font-size: 30px; margin-top: 7px; font-weight: bold; }
+  button {
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    background: #303640;
+    color: var(--text);
+    padding: 11px 15px;
+    font-weight: bold;
+    cursor: pointer;
+    font-family: Arial, sans-serif;
+  }
+  button:hover { background: #3b424d; }
+  button.primary {
+    background: var(--accent);
+    color: #191814;
+    border-color: var(--accent);
+    width: 100%;
+    margin-top: 15px;
+    font-size: 16px;
+  }
+  button.primary:hover { filter: brightness(1.08); }
+  .buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+  .history { max-height: 370px; overflow: auto; margin-top: 12px; }
+  .history-item {
+    display: grid;
+    grid-template-columns: 1fr 70px 80px;
+    gap: 8px;
+    padding: 9px 0;
+    border-bottom: 1px solid #383e47;
+    font-family: Arial, sans-serif;
+    font-size: 13px;
+    align-items: center;
+  }
+  .history-item:last-child { border-bottom: 0; }
+  .history-item .num { text-align: right; color: var(--accent); font-weight: bold; }
+  .history-item .totalh { text-align: right; font-weight: bold; }
+  .batch textarea { min-height: 155px; resize: vertical; font-family: monospace; font-size: 13px; }
+  .batch .help { color: var(--muted); font: 12px Arial, sans-serif; margin: 8px 0 0; line-height: 1.45; }
+  .batch-results { margin-top: 14px; }
+  .batch-row {
+    display: grid;
+    grid-template-columns: 1fr 60px 60px;
+    gap: 8px;
+    padding: 8px 0;
+    border-bottom: 1px solid #383e47;
+    font-family: Arial, sans-serif;
+    font-size: 13px;
+  }
+  .batch-row strong { color: var(--accent); text-align: right; }
+  .copy-ok { color: var(--accent2); font: 12px Arial, sans-serif; min-height: 16px; margin-top: 5px; }
+  footer {
+    padding: 14px 24px;
+    border-top: 1px solid var(--border);
+    color: var(--muted);
+    font: 11px Arial, sans-serif;
+    text-align: center;
+  }
+  @media (max-width: 760px) {
+    .main { grid-template-columns: 1fr; }
+    header { align-items: flex-start; }
+    .row { grid-template-columns: 1fr 110px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div>
+      <h1>🎲 Generator d20</h1>
+      <div class="subtitle">Shadowdark — rzut pojedynczy i inicjatywa</div>
+    </div>
+    <button onclick="clearHistory()">Wyczyść historię</button>
+  </header>
+
+  <div class="main">
+    <section class="card">
+      <div class="row">
+        <div>
+          <label for="name">Nazwa postaci / potwora</label>
+          <input id="name" placeholder="np. BAJO - BOLEG">
+        </div>
+        <div>
+          <label for="mod">Modyfikator</label>
+          <input id="mod" type="number" value="0" step="1">
+        </div>
+      </div>
+
+      <button class="primary" onclick="rollSingle()">🎲 RZUĆ D20</button>
+
+      <div class="result">
+        <div class="dice">🎲</div>
+        <div class="roll-number" id="roll">—</div>
+        <div class="calculation" id="calc">Kliknij „RZUĆ D20”</div>
+        <div class="total" id="total">—</div>
+      </div>
+
+      <div class="buttons">
+        <button onclick="copyTotal()">📋 Kopiuj wynik</button>
+        <button onclick="copyRow()">📋 Kopiuj wiersz</button>
+      </div>
+      <div class="copy-ok" id="copyStatus"></div>
+
+      <div style="margin-top:18px; color:var(--muted); font:12px Arial,sans-serif;">
+        „Kopiuj wynik” kopiuje samą liczbę do wklejenia np. do kolumny <b>Priority</b>.
+        „Kopiuj wiersz” kopiuje nazwę i wynik.
+      </div>
+
+      <h3 style="margin:22px 0 6px;">Ostatnie rzuty</h3>
+      <div class="history" id="history"></div>
+    </section>
+
+    <section class="card batch">
+      <h2 style="margin:0 0 6px;">🎲 Rzut inicjatywy wszystkim</h2>
+      <div style="color:var(--muted);font:13px Arial,sans-serif;margin-bottom:14px;">
+        Wpisz po jednej osobie w wierszu: <b>nazwa | modyfikator</b>
+      </div>
+      <textarea id="batchInput">BAJO - BOLEG | 1
+ADA - ELARA | 2
+DEXTER - MUNG | 2
+ROSARIEN | 3</textarea>
+      <button class="primary" onclick="rollBatch()">🎲 RZUĆ WSZYSTKIM</button>
+      <div class="batch-results" id="batchResults"></div>
+      <div class="buttons">
+        <button onclick="copyBatchTotals()">📋 Kopiuj wyniki</button>
+        <button onclick="sortBatch()">↕ Sortuj malejąco</button>
+      </div>
+      <div class="copy-ok" id="batchStatus"></div>
+      <p class="help">
+        Wynik końcowy = d20 + modyfikator. Wyniki są zaokrąglone do kolejności inicjatywy
+        i możesz je wkleić ręcznie do kolumny <b>Priority</b> w Miro.
+      </p>
+    </section>
+  </div>
+
+  <footer>Generator działa lokalnie w przeglądarce. Nie wysyła rzutów ani danych do internetu.</footer>
+</div>
+
+<script>
+let currentRoll = null;
+let currentTotal = null;
+let history = [];
+let batchData = [];
+
+function d20() {
+  return Math.floor(Math.random() * 20) + 1;
+}
+function getMod() {
+  const v = parseInt(document.getElementById('mod').value, 10);
+  return Number.isFinite(v) ? v : 0;
+}
+function fmtMod(m) { return m >= 0 ? '+' + m : String(m); }
+
+function rollSingle() {
+  const name = document.getElementById('name').value.trim() || 'Rzut';
+  const mod = getMod();
+  const r = d20();
+  const total = r + mod;
+  currentRoll = r;
+  currentTotal = total;
+
+  document.getElementById('roll').textContent = r;
+  document.getElementById('calc').textContent = `${r} ${fmtMod(mod)}`;
+  document.getElementById('total').textContent = `Wynik: ${total}`;
+
+  history.unshift({name, r, mod, total});
+  history = history.slice(0, 30);
+  renderHistory();
+  setStatus('copyStatus', '');
+}
+
+function renderHistory() {
+  const el = document.getElementById('history');
+  if (!history.length) {
+    el.innerHTML = '<div style="color:var(--muted);font:12px Arial,sans-serif;">Brak rzutów.</div>';
+    return;
+  }
+  el.innerHTML = history.map(x => `
+    <div class="history-item">
+      <span>${escapeHtml(x.name)}</span>
+      <span class="num">${x.r}</span>
+      <span class="totalh">${x.total}</span>
+    </div>
+  `).join('');
+}
+
+function clearHistory() {
+  history = [];
+  renderHistory();
+}
+
+async function copyText(text, statusId) {
+  try {
+    await navigator.clipboard.writeText(text);
+    setStatus(statusId, '✓ Skopiowano');
+  } catch {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    ta.remove();
+    setStatus(statusId, '✓ Skopiowano');
+  }
+}
+function copyTotal() {
+  if (currentTotal === null) return setStatus('copyStatus', 'Najpierw wykonaj rzut.');
+  copyText(String(currentTotal), 'copyStatus');
+}
+function copyRow() {
+  if (currentTotal === null) return setStatus('copyStatus', 'Najpierw wykonaj rzut.');
+  const name = document.getElementById('name').value.trim() || 'Rzut';
+  copyText(`${name}\t${currentTotal}`, 'copyStatus');
+}
+
+function rollBatch() {
+  const lines = document.getElementById('batchInput').value.split(/\r?\n/);
+  batchData = [];
+  for (const line of lines) {
+    if (!line.trim()) continue;
+    const parts = line.split('|');
+    const name = (parts[0] || '').trim();
+    if (!name) continue;
+    const mod = parts.length > 1 ? parseInt(parts[1].trim(), 10) : 0;
+    const safeMod = Number.isFinite(mod) ? mod : 0;
+    const r = d20();
+    batchData.push({name, mod:safeMod, r, total:r+safeMod});
+  }
+  renderBatch();
+  setStatus('batchStatus', '');
+}
+function sortBatch() {
+  batchData.sort((a,b) => b.total - a.total || b.r - a.r);
+  renderBatch();
+}
+function renderBatch() {
+  const el = document.getElementById('batchResults');
+  if (!batchData.length) {
+    el.innerHTML = '<div style="color:var(--muted);font:12px Arial,sans-serif;">Wpisz postacie i kliknij „RZUĆ WSZYSTKIM”.</div>';
+    return;
+  }
+  el.innerHTML = batchData.map((x,i) => `
+    <div class="batch-row">
+      <span>${i+1}. ${escapeHtml(x.name)}</span>
+      <span style="text-align:right">${x.r} ${fmtMod(x.mod)}</span>
+      <strong>${x.total}</strong>
+    </div>
+  `).join('');
+}
+function copyBatchTotals() {
+  if (!batchData.length) return setStatus('batchStatus', 'Najpierw wykonaj rzut.');
+  const text = batchData.map(x => `${x.name}\t${x.total}`).join('\n');
+  copyText(text, 'batchStatus');
+}
+function setStatus(id, text) {
+  document.getElementById(id).textContent = text;
+  if (text) setTimeout(() => document.getElementById(id).textContent = '', 1800);
+}
+function escapeHtml(s) {
+  return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+}
+renderHistory();
+renderBatch();
+</script>
+</body>
+</html>
